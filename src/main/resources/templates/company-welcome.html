@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome Company</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f9f9f9; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #fff; padding: 20px; border-radius: 8px; }
+        h1 { color: #2196F3; }
+        p { font-size: 16px; line-height: 1.5; }
+        .details { background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Welcome, <span th:text="${companyName}">Company</span>!</h1>
+    <p>Your company account is ready. Start posting jobs to attract talented candidates today!</p>
+    <div class="details">
+        <p>Email: <span th:text="${toEmail}">company@example.com</span></p>
+    </div>
+</div>
+</body>
+</html>

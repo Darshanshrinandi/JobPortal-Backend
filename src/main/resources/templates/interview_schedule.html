@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Interview Scheduled</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f5f5f5; margin:0; padding:0;">
+<table align="center" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; padding: 20px;">
+    <tr>
+        <td style="text-align: center; padding-bottom: 20px;">
+            <h2 style="color: #333333;">Interview Scheduled!</h2>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 10px 0;">
+            <p>Dear <strong th:text="${username}">User Name</strong>,</p>
+            <p>We are pleased to inform you that your interview has been scheduled for the following job:</p>
+            <table width="100%" cellpadding="5" cellspacing="0" style="border: 1px solid #ddd; border-radius: 5px;">
+                <tr style="background-color: #f0f0f0;">
+                    <td><strong>Job Title:</strong></td>
+                    <td th:text="${jobTitle}">Job Title</td>
+                </tr>
+                <tr>
+                    <td><strong>Company Name:</strong></td>
+                    <td th:text="${companyName}">Company Name</td>
+                </tr>
+                <tr style="background-color: #f0f0f0;">
+                    <td><strong>Location:</strong></td>
+                    <td th:text="${location}">Job Location</td>
+                </tr>
+                <tr>
+                    <td><strong>Date & Time:</strong></td>
+                    <td th:text="${interviewDate}">Interview Date</td>
+                </tr>
+                <tr style="background-color: #f0f0f0;">
+                    <td><strong>Mode:</strong></td>
+                    <td th:text="${mode}">Online/Offline</td>
+                </tr>
+            </table>
+            <p style="margin-top: 20px;">Please be prepared and reach out to the company if you have any questions.</p>
+            <p style="text-align: center; margin: 20px 0;">
+                <a href="http://localhost:8085/jobs" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Job Details</a>
+            </p>
+            <p>We wish you the very best for your interview!</p>
+            <p style="margin-top: 20px;">Regards,<br><strong>JobPortal Team</strong></p>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

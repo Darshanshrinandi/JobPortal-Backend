@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Application Status</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f9f9f9; }
+        .container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
+        h2 { color: #FF9800; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Application Status Update</h2>
+    <p>Hi,</p>
+    <p>Your application for <strong><span th:text="${jobTitle}">Job Title</span></strong> is now <strong><span th:text="${status}">Status</span></strong>.</p>
+    <p>Thank you for using JobPortal!</p>
+</div>
+</body>
+</html>

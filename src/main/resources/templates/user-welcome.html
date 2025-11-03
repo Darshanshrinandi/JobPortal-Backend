@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to JobPortal</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f2f2f2; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 30px auto; background-color: #fff; padding: 20px; border-radius: 8px; }
+        h1 { color: #4CAF50; }
+        p { font-size: 16px; line-height: 1.5; }
+        .details { background-color: #f9f9f9; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Welcome, <span th:text="${username}">User</span>!</h1>
+    <p>Thank you for joining JobPortal. Here are your account details:</p>
+    <div class="details">
+        <p>Email: <span th:text="${username}">email@example.com</span></p>
+        <p>Password: <span th:text="${password}">password123</span></p>
+    </div>
+    <p>We are excited to help you find your dream job!</p>
+</div>
+</body>
+</html>

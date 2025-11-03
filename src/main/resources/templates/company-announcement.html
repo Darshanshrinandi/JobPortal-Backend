@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Company Announcement</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        h2 {
+            color: #007bff;
+            text-align: center;
+        }
+        p {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.5;
+        }
+        .announcement {
+            background-color: #f0f8ff;
+            padding: 15px;
+            border-left: 5px solid #007bff;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .footer {
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Company Announcement</h2>
+    <p>Dear User,</p>
+    <div class="announcement" th:utext="${announcements}">
+        <!-- Announcement content goes here -->
+    </div>
+    <p class="footer">You are receiving this email because you are subscribed to updates from this company.</p>
+</div>
+</body>
+</html>

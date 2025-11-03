@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Recommended Jobs</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f2f2f2; margin:0; padding:0; }
+        .container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
+        h2 { color: #FF5722; text-align: center; }
+        p { font-size: 16px; color: #555; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 10px; font-size: 15px; }
+        .footer { font-size: 12px; color: #888; text-align: center; margin-top: 20px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Recommended Jobs for You</h2>
+    <p>Hi <span th:text="${username}">User</span>, based on your profile, we recommend the following jobs:</p>
+    <ul>
+        <li th:each="job : ${jobs}" th:text="${job}">Job Title at Company in Location</li>
+    </ul>
+    <p class="footer">You are receiving this email because you are subscribed to JobPortal recommendations.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>New Job Notification</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+        .email-container { background: #fff; padding: 20px; border-radius: 8px; }
+        .header { color: #007bff; font-size: 22px; }
+        .details { margin-top: 10px; line-height: 1.6; }
+        a { color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <h2 class="header">New Job Posted!</h2>
+    <p>Hello,</p>
+    <p class="details">
+        A new job has been posted on <strong>JobPortal</strong>:
+    </p>
+    <ul class="details">
+        <li><strong>Title:</strong> <span th:text="${jobTitle}"></span></li>
+        <li><strong>Company:</strong> <span th:text="${companyName}"></span></li>
+        <li><strong>Location:</strong> <span th:text="${location}"></span></li>
+        <li><strong>Salary:</strong> <span th:text="${salary}"></span></li>
+    </ul>
+    <p>Visit <a href="http://localhost:8085/jobs" target="_blank">JobPortal</a> to apply today!</p>
+</div>
+</body>
+</html>
