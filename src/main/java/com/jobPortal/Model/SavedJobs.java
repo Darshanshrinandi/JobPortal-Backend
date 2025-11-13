@@ -1,5 +1,6 @@
 package com.jobPortal.Model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import lombok.AllArgsConstructor;
@@ -24,10 +25,12 @@ public class SavedJobs {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonBackReference
     private User user;
 
     @ManyToOne
     @JoinColumn(name = "job_id", nullable = false)
+    @JsonBackReference
     private Job job;
 
     @Override

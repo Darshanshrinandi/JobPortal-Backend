@@ -89,6 +89,9 @@ public class PublicController {
             @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture
     ) throws IOException, MessagingException {
 
+        if (userDTO.getPassword() == null || userDTO.getPassword().isEmpty()) {
+            throw new RuntimeException("Password is required for signup");
+        }
         User createdUser = userService.createUser(userDTO, resumeFile, profilePicture);
 
         ApiResponse<User> response = new ApiResponse<>(
@@ -181,14 +184,7 @@ public class PublicController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @GetMapping("/findJobs/company/{id}")
-    public ResponseEntity<ApiResponse<List<JobDTO>>> findJobByCompanyId(@PathVariable Long id) {
-        List<JobDTO> jobs = jobService.getJobsByCompanyId(id);
 
-        ApiResponse<List<JobDTO>> response = new ApiResponse<>(HttpStatus.OK.value(), "Jobs found", jobs);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-
-    }
 
     @GetMapping("/findJobs/category/{id}")
     public ResponseEntity<ApiResponse<List<JobDTO>>> findJobByCategoryId(@PathVariable Long id) {
@@ -284,5 +280,19 @@ public class PublicController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
 
     }
+
+    @GetMapping("/company/{companyId}")
+    public ResponseEntity<ApiResponse<List<ReviewDTO>>> getReviewsByCompany(@PathVariable Long companyId) {
+        List<ReviewDTO> reviews = reviewService.getReviewsByCompany(companyId);
+        ApiResponse<List<ReviewDTO>> response = new ApiResponse<>(
+                HttpStatus.OK.value(),
+                "Fetched company reviews",
+                reviews
+        );
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+
+
 
 }

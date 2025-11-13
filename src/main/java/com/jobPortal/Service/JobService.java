@@ -9,9 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service("jobService")
@@ -201,6 +199,20 @@ public class JobService {
         return job;
     }
 
+    public Map<String, Object> getJobStats(Long companyId) {
+        List<Job> jobs = jobRepository.findByCompanyCompanyId(companyId);
+        long total = jobs.size();
+        long active = jobs.stream().filter(j -> "ACTIVE".equalsIgnoreCase(j.getStatus())).count();
+        long closed = jobs.stream().filter(j -> "CLOSED".equalsIgnoreCase(j.getStatus())).count();
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalJobs", total);
+        stats.put("activeJobs", active);
+        stats.put("closedJobs", closed);
+        return stats;
+    }
+
+
     private JobDTO mapToDTO(Job job) {
         Set<String> skillNames = job.getSkills().stream()
                 .map(Skill::getName)
@@ -220,6 +232,8 @@ public class JobService {
                 .skillNames(skillNames)
                 .build();
     }
+
+
 
 
     public boolean isJobOwner(Long jobId, Long companyId) {

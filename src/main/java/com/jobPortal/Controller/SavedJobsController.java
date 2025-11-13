@@ -51,19 +51,20 @@ public class SavedJobsController {
 
     }
 
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
     @GetMapping("/user/{id}")
     public ResponseEntity<ApiResponse<List<SavedJobsDTO>>> getSavedJobsByUser(@PathVariable Long id) {
         List<SavedJobsDTO> savedJobs = savedJobsService.getSavedJobsByUser(id);
 
         ApiResponse<List<SavedJobsDTO>> response = new ApiResponse<>(
                 HttpStatus.OK.value(),
-                "Jobs saved successfully",
+                "Jobs fetched successfully",
                 savedJobs
         );
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
 
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
     @GetMapping("/check")

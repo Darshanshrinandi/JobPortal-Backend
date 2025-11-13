@@ -137,4 +137,12 @@ public class InterviewService {
 
         return ownerCompany.getCompanyId().equals(companyId);
     }
+
+    public void addFeedback(Long interviewId, String feedback) {
+        Interview interview = interviewRepository.findById(interviewId)
+                .orElseThrow(() -> new RuntimeException("Interview not found by id " + interviewId));
+        interview.setFeedback(feedback);
+        interviewRepository.save(interview);
+    }
+
 }

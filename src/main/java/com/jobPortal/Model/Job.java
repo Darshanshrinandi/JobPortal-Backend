@@ -1,5 +1,6 @@
 package com.jobPortal.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -66,5 +67,6 @@ public class Job {
     private List<Application> applications = new ArrayList<>();
 
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<SavedJobs> savedJobs = new ArrayList<>();
 }

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/JobPortal/role")
+@RequestMapping("/jobPortal/role")
 @PreAuthorize("hasRole('ADMIN')")
 public class RoleController {
 

@@ -4,18 +4,28 @@ import com.jobPortal.DTO.ApiResponse;
 import com.jobPortal.DTO.CompanyDTO;
 import com.jobPortal.Model.Company;
 import com.jobPortal.Service.CompanyService;
+import com.jobPortal.Validation.ValidationGroups;
+import jakarta.annotation.Resource;
 import jakarta.annotation.security.PermitAll;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +38,7 @@ public class CompanyController {
     @Autowired
     private CompanyService companyService;
 
-    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwner(#id,authentication.principal.id)")
+    @PreAuthorize("hasAnyRole('USER','ADMIN') or @companyService.isCompanyOwner(#id, authentication)")
     @GetMapping("/findCompany/{id}")
     public ResponseEntity<ApiResponse<Company>> getCompany(@PathVariable Long id) {
         Company company = companyService.getCompanyById(id);
@@ -38,15 +48,17 @@ public class CompanyController {
                 "Fetched Successfully",
                 company
         );
-
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+
     //Create Company
+
     @PermitAll
     @PostMapping(value = "/createCompany", consumes = {"multipart/form-data"})
     public ResponseEntity<ApiResponse<Company>> createCompany(
-            @Valid @RequestPart("company") CompanyDTO companyDTO,
+            @Validated(ValidationGroups.Create.class)
+            @RequestPart("company") CompanyDTO companyDTO,
             @RequestPart(value = "logoFile", required = false) MultipartFile logoFile
     ) throws IOException, MessagingException {
         companyDTO.setLogoFile(logoFile);
@@ -58,19 +70,19 @@ public class CompanyController {
                 savedCompany
         );
         return new ResponseEntity<>(response, HttpStatus.CREATED);
-
     }
 
-    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwner(#id,authentication.principal.id)")
+
+    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwner(#id,authentication)")
     @PutMapping(value = "/updateCompany/{id}", consumes = {"multipart/form-data"})
     public ResponseEntity<ApiResponse<Company>> updateCompany(
             @PathVariable Long id,
-            @Valid @RequestPart("company") CompanyDTO company,
+            @Validated(ValidationGroups.Update.class)
+            @RequestPart("company") CompanyDTO companyDTO,
             @RequestPart(value = "logoFile", required = false) MultipartFile logoFile
     ) throws IOException {
-
-        company.setLogoFile(logoFile);
-        Company updatedCompany = companyService.updateCompany(id, company);
+        companyDTO.setLogoFile(logoFile);
+        Company updatedCompany = companyService.updateCompany(id, companyDTO);
 
         ApiResponse<Company> response = new ApiResponse<>(
                 HttpStatus.OK.value(),
@@ -78,9 +90,8 @@ public class CompanyController {
                 updatedCompany
         );
         return new ResponseEntity<>(response, HttpStatus.OK);
-
-
     }
+
 
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @GetMapping(value = "/getAllCompanies")
@@ -131,7 +142,7 @@ public class CompanyController {
     }
 
 
-    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwner(#id,authentication.principal.id)")
+    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwner(#id,authentication)")
     @PutMapping("/activate/{id}")
     public ResponseEntity<ApiResponse<String>> activateCompany(@PathVariable Long id) {
         companyService.activateCompany(id);
@@ -146,7 +157,7 @@ public class CompanyController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwner(#id,authentication.id)")
+    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwner(#id,authentication)")
     @PutMapping("deactivate/{id}")
     public ResponseEntity<ApiResponse<String>> deactivateCompany(@PathVariable Long id) {
         companyService.deactivateCompany(id);
@@ -174,7 +185,7 @@ public class CompanyController {
 
     }
 
-    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwner(#id,authentication.principal.id)")
+    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwner(#id,authentication)")
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<ApiResponse<Boolean>> deleteCompany(@PathVariable Long id) {
         companyService.deleteCompany(id);
@@ -187,4 +198,70 @@ public class CompanyController {
 
         return new ResponseEntity<>(response, HttpStatus.NO_CONTENT);
     }
+    @PermitAll
+    @GetMapping("/public/{id}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getPublicCompanyDetails(@PathVariable Long id) {
+        Company company = companyService.getCompanyById(id);
+        double averageRating = companyService.getAverageRatings(id);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("companyId", company.getCompanyId());
+        data.put("name", company.getName());
+        data.put("description", company.getDescription());
+        data.put("webSite", company.getWebSite());
+        data.put("location", company.getLocation());
+        data.put("logo", company.getLogo());
+        data.put("averageRating", averageRating);
+
+        ApiResponse<Map<String, Object>> response = new ApiResponse<>(
+                HttpStatus.OK.value(),
+                "Company public profile fetched successfully",
+                data
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PermitAll
+    @GetMapping("/logo/{id}/download")
+    public ResponseEntity<UrlResource> downloadCompanyLogo(@PathVariable Long id) throws IOException {
+        Company company = companyService.getCompanyById(id);
+
+        if (company == null) {
+            throw new RuntimeException("Company ID " + id + " not found");
+        }
+
+        String logoPath = company.getLogo();
+        if (logoPath == null || logoPath.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Path path = Paths.get(logoPath).toAbsolutePath().normalize();
+        UrlResource resource = new UrlResource(path.toUri());
+
+        if (!resource.exists() || !resource.isReadable()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String fileName = path.getFileName().toString();
+
+        MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        try {
+            String mimeType = Files.probeContentType(path);
+            if (mimeType != null) {
+                mediaType = MediaType.parseMediaType(mimeType);
+            }
+        } catch (IOException ignored) {}
+
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+                .body(resource);
+    }
+
+
+
+
+
+
 }

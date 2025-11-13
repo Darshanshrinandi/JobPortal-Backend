@@ -79,6 +79,14 @@ public class ReviewService {
         return mapToDTO(review);
     }
 
+    public List<ReviewDTO> getReviewsByCompany(Long companyId) {
+        return reviewRepository.findByCompany_CompanyId(companyId)
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+
     private ReviewDTO mapToDTO(Review review) {
         return ReviewDTO.builder()
                 .reviewId(review.getReviewId())

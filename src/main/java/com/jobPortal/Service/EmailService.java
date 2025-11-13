@@ -7,6 +7,7 @@ import com.jobPortal.Repository.JobRepository;
 import com.jobPortal.Repository.UserRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -26,6 +27,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class EmailService {
 
     @Autowired
@@ -105,24 +107,28 @@ public class EmailService {
                                            String mode,
                                            String companyName,
                                            String location,
-                                           Company company) throws MessagingException {
+                                           Company company) {
+        try {
+            Context context = new Context();
+            context.setVariable("username", username);
+            context.setVariable("jobTitle", jobTitle);
+            context.setVariable("interviewDate", interviewDate);
+            context.setVariable("mode", mode);
+            context.setVariable("companyName", companyName);
+            context.setVariable("location", location);
 
-        // Prepare the Thymeleaf context
-        JavaMailSender mailSender = createCompanyMail(company.getEmail(), company.getPassword());
-        Context context = new Context();
-        context.setVariable("username", username);
-        context.setVariable("jobTitle", jobTitle);
-        context.setVariable("interviewDate", interviewDate);
-        context.setVariable("mode", mode);
-        context.setVariable("companyName", companyName);
-        context.setVariable("location", location);
+            String htmlBody = templateEngine.process("interview-schedule.html", context);
 
-        // Generate HTML email body
-        String body = templateEngine.process("interview-schedule.html", context);
 
-        // Send the email
-        sendMail(jobPortalMailSender, jobPortalMail, toEmail, "Your Interview is Scheduled!", body);
+            sendMail(jobPortalMailSender, jobPortalMail, toEmail,
+                    "Your Interview is Scheduled!", htmlBody);
+
+            log.info("✅ Interview email sent to {}", toEmail);
+        } catch (Exception e) {
+            log.error(" Failed to send interview email to {}: {}", toEmail, e.getMessage(), e);
+        }
     }
+
 
     @Async
     @Scheduled(cron = "0 0 8 ? * SUN") // Runs every Sunday at 8 AM

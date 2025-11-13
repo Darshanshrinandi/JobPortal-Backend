@@ -4,8 +4,7 @@ import com.jobPortal.DTO.ApiResponse;
 import com.jobPortal.DTO.UserDTO;
 import com.jobPortal.Model.User;
 import com.jobPortal.Service.UserService;
-import jakarta.annotation.security.PermitAll;
-import jakarta.mail.MessagingException;
+
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.UrlResource;
@@ -21,13 +20,14 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
 
 @RestController
-@RequestMapping("/JobPortal/users")
+@RequestMapping("/jobPortal/users")
 public class UserController {
 
     @Autowired
@@ -35,17 +35,11 @@ public class UserController {
 
     @PreAuthorize("#id==authentication.principal.id or hasRole('ADMIN')")
     @GetMapping("/findUser/id/{id}")
-    public ResponseEntity<ApiResponse<User>> findUserById(@PathVariable Long id) {
-
-        User user = userService.findUserById(id);
-
-        ApiResponse<User> response = new ApiResponse<>(
-                HttpStatus.OK.value(),
-                "User fecthed Successfully",
-                user
-        );
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    public ResponseEntity<ApiResponse<UserDTO>> findUserById(@PathVariable Long id) {
+        UserDTO userDTO = userService.findUserById(id);
+        return ResponseEntity.ok(new ApiResponse<>(200, "User fetched successfully", userDTO));
     }
+
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/findAllUsers")
@@ -76,27 +70,41 @@ public class UserController {
     @PreAuthorize("#id==authentication.principal.id or hasRole('ADMIN')")
     @GetMapping("/resume/{id}/info")
     public ResponseEntity<ApiResponse<String>> getResumeInfo(@PathVariable Long id) {
-        User user = userService.findUserById(id);
+        UserDTO user = userService.findUserById(id);
 
-        if (user.getResume() == null && user.getResume().isEmpty()) {
-            ApiResponse<String> response = new ApiResponse<>(
-                    404,
-                    "resume not found by this id " + id,
-                    null
-            );
-            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        // ✅ Defensive null/empty check
+        if (user.getResume() == null || user.getResume().trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(
+                            404,
+                            "Resume not found for user ID: " + id,
+                            null
+                    ));
         }
 
-        String url = "/users/resume/" + id + "/download";
 
-        ApiResponse<String> response = new ApiResponse<>(
-                200,
-                "resume is ready for download",
-                url
+        Path resumePath = Paths.get(user.getResume());
+        if (!Files.exists(resumePath)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(
+                            404,
+                            "Resume file missing from storage for user ID: " + id,
+                            null
+                    ));
+        }
+
+
+        String downloadUrl = String.format("/jobPortal/users/resume/%d/download", id);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        "Resume is ready for download",
+                        downloadUrl
+                )
         );
-        return new ResponseEntity<>(response, HttpStatus.OK);
-
     }
+
 
     @PreAuthorize("#id==authentication.principal.id or hasRole('ADMIN')")
     @GetMapping("/resume/{id}/download")
@@ -165,7 +173,7 @@ public class UserController {
     }
 
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("#id==authentication.principal.id or hasRole('ADMIN')")
     @DeleteMapping("/delete/id/{id}")
     public ResponseEntity<ApiResponse<User>> deleteUser(@PathVariable Long id) {
 

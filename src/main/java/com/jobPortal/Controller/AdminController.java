@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,17 +30,11 @@ public class AdminController {
 
 
     @GetMapping("/findUser/id/{id}")
-    public ResponseEntity<ApiResponse<User>> findUserById(@PathVariable Long id) {
-
-        User user = userService.findUserById(id);
-
-        ApiResponse<User> response = new ApiResponse<>(
-                HttpStatus.OK.value(),
-                "User fecthed Successfully",
-                user
-        );
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    public ResponseEntity<ApiResponse<UserDTO>> findUserById(@PathVariable Long id) {
+        UserDTO userDTO = userService.findUserById(id);
+        return ResponseEntity.ok(new ApiResponse<>(200, "User fetched successfully", userDTO));
     }
+
 
     @GetMapping("/findAllUsers")
     public ResponseEntity<ApiResponse<Map<String, Object>>> findAllUsers(
@@ -65,29 +60,40 @@ public class AdminController {
     }
 
 
-    @GetMapping("/resume/{id}/info")
+    @GetMapping("/resume/info/{id}")
     public ResponseEntity<ApiResponse<String>> getResumeInfo(@PathVariable Long id) {
-        User user = userService.findUserById(id);
+        UserDTO user = userService.findUserById(id);
 
-        if (user.getResume() == null && user.getResume().isEmpty()) {
-            ApiResponse<String> response = new ApiResponse<>(
-                    404,
-                    "resume not found by this id " + id,
-                    null
-            );
-            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        if (user.getResume() == null || user.getResume().trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(
+                            404,
+                            "Resume not found for user ID: " + id,
+                            null
+                    ));
         }
 
-        String url = "/users/resume/" + id + "/download";
+        Path resumePath = Paths.get(user.getResume());
+        if (!Files.exists(resumePath)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(
+                            404,
+                            "Resume file missing from storage for user ID: " + id,
+                            null
+                    ));
+        }
 
-        ApiResponse<String> response = new ApiResponse<>(
-                200,
-                "resume is ready for download",
-                url
+        String downloadUrl = String.format("/jobPortal/users/resume/%d/download", id);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        200,
+                        "Resume is ready for download",
+                        downloadUrl
+                )
         );
-        return new ResponseEntity<>(response, HttpStatus.OK);
-
     }
+
 
     @GetMapping("/resume/{id}/download")
     public ResponseEntity<UrlResource> downloadResume(@PathVariable Long id) throws IOException {

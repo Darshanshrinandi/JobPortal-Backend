@@ -1,6 +1,7 @@
 package com.jobPortal.Model;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -52,13 +53,14 @@ public class Company {
     private Date updatedAt;
 
     @OneToMany(mappedBy = "company")
+    @JsonIgnore
     private List<Job> jobs = new ArrayList<>();
 
     @OneToMany(mappedBy = "company")
     @JsonManagedReference
     private List<Review> reviews = new ArrayList<>();
 
-    private String status;
+    private String status ="INACTIVE";
 
 
 }

@@ -19,13 +19,14 @@ import java.util.Set;
 public class JobDTO {
 
 
-    @NotNull(message = "Company ID is required")
+
+    private Long jobId;
+
+
     private Long companyId;
 
     @NotNull(message = "Job category ID is required")
     private Long categoryId;
-
-    private Long jobId;
 
 
     @NotBlank(message = "Job title is required")

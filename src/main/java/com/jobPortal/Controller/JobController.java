@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/jobPortal/job")
@@ -38,7 +39,7 @@ public class JobController {
 //        return new ResponseEntity<>(response, HttpStatus.OK);
 //    }
 
-    @PreAuthorize("hasRole('ADMIN') or #companyId == principal.id")
+    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwner(#companyId, authentication)")
     @PostMapping("/addJob/{companyId}")
     public ResponseEntity<ApiResponse<JobDTO>> addJob(
             @Valid @RequestBody JobDTO jobDTO,
@@ -85,16 +86,16 @@ public class JobController {
         ApiResponse<JobDTO> response = new ApiResponse<>(HttpStatus.OK.value(), "Job found", jobDTO);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
-
-    @PermitAll
+    @PreAuthorize("hasAnyRole('USER','ADMIN') or @companyService.isCompanyOwner(#id, authentication)")
     @GetMapping("/findJobs/company/{id}")
     public ResponseEntity<ApiResponse<List<JobDTO>>> findJobByCompanyId(@PathVariable Long id) {
         List<JobDTO> jobs = jobService.getJobsByCompanyId(id);
-
-        ApiResponse<List<JobDTO>> response = new ApiResponse<>(HttpStatus.OK.value(), "Jobs found", jobs);
+        ApiResponse<List<JobDTO>> response =
+                new ApiResponse<>(HttpStatus.OK.value(), "Jobs found", jobs);
         return new ResponseEntity<>(response, HttpStatus.OK);
-
     }
+
+
 
     @PermitAll
     @GetMapping("/findJobs/category/{id}")
@@ -151,5 +152,14 @@ public class JobController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+
+    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwner(#companyId, authentication)")
+    @GetMapping("/company/{companyId}/jobStats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getJobStats(@PathVariable Long companyId) {
+        Map<String, Object> stats = jobService.getJobStats(companyId);
+        ApiResponse<Map<String, Object>> response = new ApiResponse<>(
+                HttpStatus.OK.value(), "Job statistics fetched successfully", stats);
+        return ResponseEntity.ok(response);
+    }
 
 }

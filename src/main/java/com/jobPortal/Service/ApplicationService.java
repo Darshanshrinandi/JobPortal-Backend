@@ -9,6 +9,7 @@ import com.jobPortal.Repository.ApplicationRepository;
 import com.jobPortal.Repository.JobRepository;
 import com.jobPortal.Repository.UserRepository;
 import jakarta.mail.MessagingException;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -154,6 +155,19 @@ public class ApplicationService {
 
         applicationRepository.delete(application);
     }
+    @Transactional
+    public ApplicationDTO shortlistCandidate(Long id, boolean shortlisted) {
+        Application application = applicationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Application not found"));
+
+        application.setShortlisted(shortlisted);
+        applicationRepository.save(application);
+
+        return mapToDTO(application);
+    }
+
+
+
 
     public ApplicationDTO getApplicationById(Long id) {
         Application application = applicationRepository.findById(id)
@@ -179,11 +193,20 @@ public class ApplicationService {
 
     }
 
+    public boolean existsByUserIdAndJobId(Long userId, Long jobId) {
+        return applicationRepository.existsByUser_UserIdAndJob_JobId(userId, jobId);
+    }
+
+
     public List<ApplicationDTO> getApplicationByJob(Long id) {
 
         return applicationRepository.findByJobJobId(id).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
+    }
+    public Application getApplicationEntityById(Long id) {
+        return applicationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Application not found by id " + id));
     }
 
 
@@ -223,13 +246,46 @@ public class ApplicationService {
         }
     }
 
+
+    public ApplicationDTO updateApplicationStatus(Long id, String status) {
+        Application application = applicationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Application not found by id: " + id));
+        application.setStatus(status);
+        Application saved = applicationRepository.save(application);
+        return mapToDTO(saved);
+    }
+
+    public List<ApplicationDTO> searchApplications(String skill, String status) {
+        List<Application> applications = applicationRepository.findAll();
+
+        return applications.stream()
+                .filter(app ->
+                        (skill == null ||
+                                (app.getJob() != null &&
+                                        app.getJob().getSkills() != null &&
+                                        app.getJob().getSkills().stream()
+                                                .anyMatch(s -> s.getName().equalsIgnoreCase(skill)))) &&
+                                (status == null ||
+                                        (app.getStatus() != null && app.getStatus().equalsIgnoreCase(status))))
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+
+
     private ApplicationDTO mapToDTO(Application application) {
         return ApplicationDTO.builder()
+                .applicationId(application.getApplicationId())
                 .userId(application.getUser().getUserId())
                 .jobId(application.getJob().getJobId())
                 .coverLetter(application.getCoverLetter())
                 .status(application.getStatus())
                 .resumeFile(null)
+                .appliedDate(application.getAppliedDate() != null
+                        ? application.getAppliedDate()
+                        : null)
+                .userName(application.getUser() != null ? application.getUser().getName() : null)
+                .email(application.getUser() != null ? application.getUser().getEmail() : null)
                 .build();
     }
 

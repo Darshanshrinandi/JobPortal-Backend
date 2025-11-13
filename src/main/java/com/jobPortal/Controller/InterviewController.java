@@ -19,22 +19,18 @@ public class InterviewController {
 
     @Autowired
     private InterviewService interviewService;
-
-    @PreAuthorize("hasRole('ADMIN') or @interviewService.isAuthorized(#interviewDTO.applicationId,principal.id)")
+    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwnerByApplicationId(#interviewDTO.applicationId, authentication)")
     @PostMapping("/schedule")
-    public ResponseEntity<ApiResponse<InterviewDTO>> createInterview(
-            @Valid @RequestBody InterviewDTO interviewDTO
-    ) throws MessagingException {
+    public ResponseEntity<ApiResponse<InterviewDTO>> scheduleInterview(
+            @RequestBody InterviewDTO interviewDTO) throws MessagingException {
 
-        InterviewDTO newInterview = interviewService.scheduleInterview(interviewDTO);
-
+        InterviewDTO saved = interviewService.scheduleInterview(interviewDTO);
         ApiResponse<InterviewDTO> response = new ApiResponse<>(
-                HttpStatus.CREATED.value(),
-                "Interview Scheduled successfully",
-                newInterview
-        );
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+                HttpStatus.OK.value(), "Interview scheduled successfully", saved);
+
+        return ResponseEntity.ok(response);
     }
+
 
     @PreAuthorize("hasRole('ADMIN') or @interviewService.isAuthorized(#id,principal.id)")
     @PutMapping("/updateInterview/{id}")
@@ -113,4 +109,20 @@ public class InterviewController {
         );
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
+    @PreAuthorize("hasRole('ADMIN') or @companyService.isCompanyOwnerByJobId(#jobId, authentication)")
+    @PostMapping("/feedback/{id}")
+    public ResponseEntity<ApiResponse<String>> addFeedback(
+            @PathVariable Long id,
+            @RequestParam String feedback) {
+
+        interviewService.addFeedback(id, feedback);
+        ApiResponse<String> response = new ApiResponse<>(
+                HttpStatus.OK.value(),
+                "Feedback submitted successfully",
+                feedback
+        );
+        return ResponseEntity.ok(response);
+    }
+
 }

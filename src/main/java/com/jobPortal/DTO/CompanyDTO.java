@@ -15,15 +15,17 @@ import org.springframework.web.multipart.MultipartFile;
 @Builder
 public class CompanyDTO {
 
+    private Long companyId;
+
     @NotBlank(message = "Company name is required")
     @Size(max = 100, message = "Company name can contain at most 100 characters")
     private String name;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
+    @NotBlank(message = "Email is required,groups = ValidationGroups.Create.class")
+    @Email(message = "Email should be valid,groups = {ValidationGroups.Create.class, ValidationGroups.Update.class}")
     private String email;
 
-    @NotBlank(message = "Password is required")
+    @NotBlank(message = "Password is required,groups = ValidationGroups.Create.class")
     @Size(min = 4, message = "Password should have at least 4 characters")
     private String password;
 

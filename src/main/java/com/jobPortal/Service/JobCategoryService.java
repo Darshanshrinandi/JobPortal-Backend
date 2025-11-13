@@ -60,6 +60,7 @@ public class JobCategoryService {
 
     public JobCategoryDTO mapToDTO(JobCategory jobCategory) {
         return JobCategoryDTO.builder()
+                .categoryId(jobCategory.getCategoryId())
                 .name(jobCategory.getName())
                 .build();
     }

@@ -32,6 +32,19 @@ public class ReviewController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    @PermitAll
+    @GetMapping("/company/{companyId}")
+    public ResponseEntity<ApiResponse<List<ReviewDTO>>> getReviewsByCompany(@PathVariable Long companyId) {
+        List<ReviewDTO> reviews = reviewService.getReviewsByCompany(companyId);
+        ApiResponse<List<ReviewDTO>> response = new ApiResponse<>(
+                HttpStatus.OK.value(),
+                "Fetched company reviews",
+                reviews
+        );
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+
     @PreAuthorize("#reviewDTO.userId == authentication.principal.id or hasRole('ADMIN')")
     @PutMapping("/updateReview/{id}")
     public ResponseEntity<ApiResponse<ReviewDTO>> updateReview(

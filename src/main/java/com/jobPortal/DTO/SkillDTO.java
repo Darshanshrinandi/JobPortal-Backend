@@ -9,6 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class SkillDTO {
+
     @NotBlank(message = "Skill name cannot be blank")
     private String name;
 

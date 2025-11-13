@@ -30,6 +30,9 @@ public class Application {
     @JsonBackReference("user-applications")
     private User user;
 
+    @Column(name = "shortlisted", nullable = false)
+    private boolean shortlisted = false;
+
 
 
     @ManyToOne(fetch = FetchType.LAZY)

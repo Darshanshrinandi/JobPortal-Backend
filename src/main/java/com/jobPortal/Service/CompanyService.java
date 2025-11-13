@@ -3,8 +3,12 @@ package com.jobPortal.Service;
 import com.jobPortal.Jwt.JwtService;
 import com.jobPortal.DTO.CompanyDTO;
 import com.jobPortal.Model.Company;
+import com.jobPortal.Model.Job;
 import com.jobPortal.Model.Review;
+import com.jobPortal.Repository.ApplicationRepository;
 import com.jobPortal.Repository.CompanyRepository;
+import com.jobPortal.Repository.JobRepository;
+import com.jobPortal.Security.CompanyDetailsImpl;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +33,7 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
 
-@Service
+@Service("companyService")
 @Transactional
 public class CompanyService {
 
@@ -40,10 +44,16 @@ public class CompanyService {
     private EmailService emailService;
 
     @Autowired
+    private JobRepository jobRepository;
+
+    @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ApplicationRepository applicationRepository;
 
 
     @Autowired
@@ -54,13 +64,18 @@ public class CompanyService {
 
     public String verifyCompany(String email, String password) {
         Company company = companyRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Company not found"));
+                .orElseThrow(() -> new RuntimeException("Company not found with email: " + email));
 
-        if (passwordEncoder.matches(password, company.getPassword())) {
-            return jwtService.generateToken(email); // can use a separate token type if needed
-        } else {
-            throw new RuntimeException("Authentication Failed");
+        if (!passwordEncoder.matches(password, company.getPassword())) {
+            throw new RuntimeException("Invalid credentials");
         }
+
+
+        return jwtService.generateToken(company.getCompanyId(), company.getEmail(), "COMPANY");
+    }
+
+    public List<Company> getAllCompanies(){
+        return companyRepository.findAll();
     }
 
 
@@ -93,18 +108,27 @@ public class CompanyService {
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Company not found"));
 
-        if (!company.getEmail().equals(companyDTO.getEmail()) &&
-                companyRepository.existsByEmail(companyDTO.getEmail())) {
-            throw new RuntimeException("Email already exists");
+
+        if (companyDTO.getEmail() != null && !company.getEmail().equals(companyDTO.getEmail())) {
+            if (companyRepository.existsByEmail(companyDTO.getEmail())) {
+                throw new RuntimeException("Email already exists");
+            }
+            company.setEmail(companyDTO.getEmail());
         }
 
-        company.setName(companyDTO.getName());
-        company.setEmail(companyDTO.getEmail());
-        company.setPassword(passwordEncoder.encode(companyDTO.getPassword()));
-        company.setDescription(companyDTO.getDescription());
-        company.setWebSite(companyDTO.getWebSite());
-        company.setLocation(companyDTO.getLocation());
+
+        if (companyDTO.getName() != null) company.setName(companyDTO.getName());
+        if (companyDTO.getDescription() != null) company.setDescription(companyDTO.getDescription());
+        if (companyDTO.getWebSite() != null) company.setWebSite(companyDTO.getWebSite());
+        if (companyDTO.getLocation() != null) company.setLocation(companyDTO.getLocation());
+
+
+        if (companyDTO.getPassword() != null && !companyDTO.getPassword().isBlank()) {
+            company.setPassword(passwordEncoder.encode(companyDTO.getPassword()));
+        }
+
         company.setUpdatedAt(new Date());
+
 
         MultipartFile logoFile = companyDTO.getLogoFile();
         if (logoFile != null && !logoFile.isEmpty()) {
@@ -116,7 +140,6 @@ public class CompanyService {
         return companyRepository.save(company);
     }
 
-
     public Company getCompanyById(Long id) {
         return companyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Company not found by this id " + id));
@@ -127,6 +150,7 @@ public class CompanyService {
         Page<Company> companies = companyRepository.findAll(PageRequest.of(page, size, Sort.by(sortBy).ascending()));
 
         return companies.map(company -> CompanyDTO.builder()
+                .companyId(company.getCompanyId())
                 .name(company.getName())
                 .email(company.getEmail())
                 .description(company.getDescription())
@@ -217,10 +241,35 @@ public class CompanyService {
         }
     }
 
-    public boolean isCompanyOwner(Long companyId, Long authentication) {
+    public boolean isCompanyOwner(Long companyId, Authentication authentication) {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new RuntimeException("Company not found by this id " + companyId));
 
-        return company.getCompanyId().equals(authentication);
+        // Assuming your principal has a getId() method returning companyId
+        Long principalId = ((CompanyDetailsImpl) authentication.getPrincipal()).getId();
+
+        return company.getCompanyId().equals(principalId);
     }
+
+    public boolean isCompanyOwnerByJobId(Long jobId, Authentication authentication){
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found by this id " + jobId));
+
+         Company company = job.getCompany();
+         if(company ==null){
+             throw new RuntimeException("Company not found by this id " + jobId);
+         }
+
+         Long companyId = company.getCompanyId();
+         Long principalId = ((CompanyDetailsImpl) authentication.getPrincipal()).getId();
+         return companyId.equals(principalId);
+    }
+    public boolean isCompanyOwnerByApplicationId(Long applicationId, Authentication authentication) {
+        String email = authentication.getName();
+        return applicationRepository.findById(applicationId)
+                .map(app -> app.getJob().getCompany().getEmail().equals(email))
+                .orElse(false);
+    }
+
 }

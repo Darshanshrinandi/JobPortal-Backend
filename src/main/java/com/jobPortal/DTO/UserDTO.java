@@ -17,6 +17,9 @@ import java.util.Set;
 @Builder
 public class UserDTO {
 
+    private Long userId;
+
+
     @NotBlank(message = "Name is required")
     @Size(min = 2, max = 20, message = "Name should be between 2 and 20 characters")
     private String name;
@@ -25,7 +28,7 @@ public class UserDTO {
     @Email(message = "Email should be valid")
     private String email;
 
-    @NotBlank(message = "Password is required")
+
     @Size(min = 4, message = "Password should contain at least 4 characters")
     private String password;
 

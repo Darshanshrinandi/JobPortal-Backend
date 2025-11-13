@@ -1,6 +1,6 @@
 package com.jobPortal.Scheduler;
 
-import com.jobPortal.Model.Company;
+
 import com.jobPortal.Model.Job;
 import com.jobPortal.Model.User;
 import com.jobPortal.Repository.CompanyRepository;

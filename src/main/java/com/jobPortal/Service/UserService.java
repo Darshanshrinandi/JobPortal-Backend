@@ -9,21 +9,17 @@ import com.jobPortal.Repository.RoleRepository;
 import com.jobPortal.Repository.SkillRepository;
 import com.jobPortal.Repository.UserRepository;
 import jakarta.annotation.PostConstruct;
-
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,20 +27,14 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.nio.file.*;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @Transactional
 public class UserService {
-
 
     @Autowired
     private UserRepository userRepository;
@@ -57,11 +47,6 @@ public class UserService {
 
     @Autowired
     private EmailService emailService;
-
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
 
     @Autowired
     private JwtService jwtService;
@@ -80,43 +65,32 @@ public class UserService {
         }
     }
 
-    public User findUserById(Long id) {
-
-        return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found by this id " + id));
+    @EntityGraph(attributePaths = {"roles", "skills"})
+    public UserDTO findUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+        return convertToDTO(user);
     }
 
     public String verifyUser(String email, String password) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, password)
-        );
-        if (authentication.isAuthenticated()) {
-            return jwtService.generateToken(email);
-        } else {
-            throw new RuntimeException("Authentication Failed");
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new RuntimeException("Invalid credentials");
         }
+
+        return jwtService.generateToken(user.getUserId(), user.getEmail(), "USER");
     }
 
-
-    @Transactional
     public Page<UserDTO> getAllUsers(int page, int size, String sortBy) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).ascending());
         Page<User> users = userRepository.findAll(pageable);
-        return users.map(user -> UserDTO.builder()
-                .name(user.getName())
-                .email(user.getEmail())
-                .experience(user.getExperience())
-                .roleNames(user.getRoles().stream().map(r -> r.getName()).collect(Collectors.toSet()))
-                .skillNames(user.getSkills().stream().map(s -> s.getName()).collect(Collectors.toSet()))
-                .resume(user.getResume())
-                .profilePicture(user.getProfilePicture())
-                .build()
-        );
+        return users.map(this::convertToDTO);
     }
 
-    @Transactional
-    public User createUser(UserDTO dto,
-                           MultipartFile resumeFile,
-                           MultipartFile profileImage) throws IOException, MessagingException {
+    public User createUser(UserDTO dto, MultipartFile resumeFile, MultipartFile profileImage)
+            throws IOException, MessagingException {
 
         User user = User.builder()
                 .name(dto.getName())
@@ -130,180 +104,180 @@ public class UserService {
 
         if (dto.getRoleNames() != null && !dto.getRoleNames().isEmpty()) {
             Set<Role> roles = dto.getRoleNames().stream()
-                    .map(name -> roleRepository.findByName(name)
-                            .orElseThrow(() -> new RuntimeException("Role not found: " + name)))
+                    .map(roleName -> roleRepository.findByName(roleName)
+                            .orElseThrow(() -> new RuntimeException("Role not found: " + roleName)))
                     .collect(Collectors.toSet());
             user.setRoles(roles);
         }
 
         if (dto.getSkillNames() != null && !dto.getSkillNames().isEmpty()) {
             Set<Skill> skills = dto.getSkillNames().stream()
-                    .map(name -> skillRepository.findByName(name)
-                            .orElseThrow(() -> new RuntimeException("Skill not found: " + name)))
+                    .map(skillName -> skillRepository.findByName(skillName)
+                            .orElseThrow(() -> new RuntimeException("Skill not found: " + skillName)))
                     .collect(Collectors.toSet());
             user.setSkills(skills);
         }
 
+        handleFileUploads(user, resumeFile, profileImage);
+        User savedUser = userRepository.save(user);
+        emailService.sendUserWelcomeEmail(savedUser.getEmail(), savedUser.getName(), dto.getPassword());
+        return savedUser;
+    }
+    private void handleFileUploads(User user, MultipartFile resumeFile, MultipartFile profileImage) throws IOException {
+        Path profileDir = Paths.get("uploads/profilePictures");
+        Path resumeDir = Paths.get("uploads/resumes");
 
-        List<Path> createdFiles = new ArrayList<>();
+        // Ensure folders exist
+        if (!Files.exists(profileDir)) Files.createDirectories(profileDir);
+        if (!Files.exists(resumeDir)) Files.createDirectories(resumeDir);
 
-        try {
-            // Handle resume file
-            if (resumeFile != null && !resumeFile.isEmpty()) {
-                File resumeDir = new File(UPLOAD_DIR + "resumes");
-                if (!resumeDir.exists()) resumeDir.mkdirs();
-                String resumePath = resumeDir.getAbsolutePath() + File.separator
-                        + System.currentTimeMillis() + "_" + resumeFile.getOriginalFilename();
-                resumeFile.transferTo(new File(resumePath));
-                user.setResume(resumePath);
-                createdFiles.add(Path.of(resumePath));
-            }
-
-
-            if (profileImage != null && !profileImage.isEmpty()) {
-                File profileDir = new File(UPLOAD_DIR + "profile_images");
-                if (!profileDir.exists()) profileDir.mkdirs();
-                String profilePath = profileDir.getAbsolutePath() + File.separator
-                        + System.currentTimeMillis() + "_" + profileImage.getOriginalFilename();
-                profileImage.transferTo(new File(profilePath));
-                user.setProfilePicture(profilePath);
-                createdFiles.add(Path.of(profilePath));
-            }
-
-
-            User savedUser = userRepository.save(user);
-
-            emailService.sendUserWelcomeEmail(savedUser.getEmail(), savedUser.getName(), savedUser.getPassword());
-
-            return savedUser;
-
-        } catch (Exception e) {
-
-            for (Path path : createdFiles) {
+        // ✅ Handle profile picture update
+        if (profileImage != null && !profileImage.isEmpty()) {
+            // Delete old profile picture if it exists
+            if (user.getProfilePicture() != null) {
+                Path oldProfile = Paths.get(user.getProfilePicture());
                 try {
-                    Files.deleteIfExists(path);
-                } catch (IOException ignored) {
+                    Files.deleteIfExists(oldProfile);
+                } catch (IOException e) {
+                    System.err.println("⚠️ Failed to delete old profile picture: " + e.getMessage());
                 }
             }
-            throw e;
+
+            // Save new profile picture
+            String fileName = "profile_" + user.getUserId() + "_" + System.currentTimeMillis()
+                    + "_" + profileImage.getOriginalFilename();
+            Path filePath = profileDir.resolve(fileName);
+            Files.copy(profileImage.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            user.setProfilePicture(filePath.toString());
+        }
+
+        // ✅ Handle resume update
+        if (resumeFile != null && !resumeFile.isEmpty()) {
+            // Delete old resume if it exists
+            if (user.getResume() != null) {
+                Path oldResume = Paths.get(user.getResume());
+                try {
+                    Files.deleteIfExists(oldResume);
+                } catch (IOException e) {
+                    System.err.println("⚠️ Failed to delete old resume: " + e.getMessage());
+                }
+            }
+
+            // Save new resume
+            String resumeName = "resume_" + user.getUserId() + "_" + System.currentTimeMillis()
+                    + "_" + resumeFile.getOriginalFilename();
+            Path resumePath = resumeDir.resolve(resumeName);
+            Files.copy(resumeFile.getInputStream(), resumePath, StandardCopyOption.REPLACE_EXISTING);
+            user.setResume(resumePath.toString());
         }
     }
 
 
-    @Transactional
+    private String saveFile(MultipartFile file, String subDir) throws IOException {
+        File dir = new File(UPLOAD_DIR + subDir);
+        if (!dir.exists()) dir.mkdirs();
+        String filePath = dir.getAbsolutePath() + File.separator +
+                System.currentTimeMillis() + "_" + file.getOriginalFilename();
+        file.transferTo(new File(filePath));
+        return filePath;
+    }
+
     public UrlResource getResume(Long id) throws MalformedURLException {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found by this id " + id));
+        User user = getUserOrThrow(id);
         Path path = Paths.get(user.getResume());
-        if (!Files.exists(path)) {
-            throw new RuntimeException("Resume file not found " + id);
-        }
+        validateFileExists(path, "Resume", id);
         return new UrlResource(path.toUri());
     }
 
-    @Transactional
     public UrlResource getProfilePicture(Long id) throws MalformedURLException {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found by this id " + id));
-
+        User user = getUserOrThrow(id);
         Path path = Paths.get(user.getProfilePicture());
-
-        if (!Files.exists(path)) {
-            throw new RuntimeException("Profile picture file not found " + id);
-
-        }
-
+        validateFileExists(path, "Profile picture", id);
         return new UrlResource(path.toUri());
     }
 
-    @Transactional
-    public User updateUser(Long userId,
-                           UserDTO userDTO,
-                           MultipartFile resumeFile,
-                           MultipartFile profileImage) throws IOException {
+    private void validateFileExists(Path path, String fileType, Long id) {
+        if (!Files.exists(path)) {
+            throw new RuntimeException(fileType + " file not found for user " + id);
+        }
+    }
 
-        User existingUser = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found by this id " + userId));
+    public User updateUser(Long userId, UserDTO userDTO, MultipartFile resumeFile, MultipartFile profileImage)
+            throws IOException {
+
+        User existingUser = getUserOrThrow(userId);
 
         // Update basic fields
-        existingUser.setName(userDTO.getName());
-        existingUser.setEmail(userDTO.getEmail());
-        existingUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-        existingUser.setExperience(userDTO.getExperience());
+        if (userDTO.getName() != null) existingUser.setName(userDTO.getName());
+        if (userDTO.getEmail() != null) existingUser.setEmail(userDTO.getEmail());
+        if (userDTO.getExperience() != null) existingUser.setExperience(userDTO.getExperience());
 
-        // Update roles
-        if (userDTO.getRoleNames() != null && !userDTO.getRoleNames().isEmpty()) {
-            Set<Role> roles = new HashSet<>();
-            for (String roleName : userDTO.getRoleNames()) {
-                Role role = roleRepository.findByName(roleName)
-                        .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
-                roles.add(role);
-            }
-            existingUser.getRoles().clear();
-            existingUser.getRoles().addAll(roles);
+        // Update password only if provided
+        if (userDTO.getPassword() != null && !userDTO.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         }
 
-        // Update skills
-        if (userDTO.getSkillNames() != null && !userDTO.getSkillNames().isEmpty()) {
-            Set<Skill> skills = new HashSet<>();
-            for (String skillName : userDTO.getSkillNames()) {
-                Skill skill = skillRepository.findByName(skillName)
-                        .orElseThrow(() -> new RuntimeException("Skill not found: " + skillName));
-                skills.add(skill);
-            }
-            existingUser.getSkills().clear();
-            existingUser.getSkills().addAll(skills);
-        }
+        // Update skills and other relations
+        updateUserRelations(existingUser, userDTO);
 
-        // Update resume file
-        if (resumeFile != null && !resumeFile.isEmpty()) {
-            File resumeDir = new File(UPLOAD_DIR + "resumes");
-            if (!resumeDir.exists()) resumeDir.mkdirs();
-
-            String resumePath = resumeDir.getAbsolutePath() + File.separator
-                    + System.currentTimeMillis() + "_" + resumeFile.getOriginalFilename();
-            resumeFile.transferTo(new File(resumePath));
-            existingUser.setResume(resumePath);
-        }
-
-        // Update profile image
-        if (profileImage != null && !profileImage.isEmpty()) {
-            File profileDir = new File(UPLOAD_DIR + "profile_images");
-            if (!profileDir.exists()) profileDir.mkdirs();
-
-            String profilePath = profileDir.getAbsolutePath() + File.separator
-                    + System.currentTimeMillis() + "_" + profileImage.getOriginalFilename();
-            profileImage.transferTo(new File(profilePath));
-            existingUser.setProfilePicture(profilePath);
-        }
+        // Handle resume and profile picture replacement
+        handleFileUploads(existingUser, resumeFile, profileImage);
 
         return userRepository.save(existingUser);
     }
 
 
-    @Transactional
-    public void deleteUser(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found by this id " + id));
 
+    public void deleteUser(Long id) {
+        User user = getUserOrThrow(id);
         user.getRoles().clear();
         user.getSkills().clear();
-
-        if (user.getResume() != null && !user.getResume().isEmpty()) {
-            try {
-                Files.deleteIfExists(Path.of(user.getResume()));
-            } catch (IOException e) {
-                log.error("Failed to delete resume for the user " + user.getUserId() + " " + e.getMessage());
-            }
-        }
-
-        if (user.getProfilePicture() != null && !user.getProfilePicture().isEmpty()) {
-            try {
-                Files.deleteIfExists(Path.of(user.getProfilePicture()));
-            } catch (IOException e) {
-                log.error("Failed to delete resume for the user " + user.getUserId() + " " + e.getMessage());
-            }
-        }
-
+        deleteFile(user.getResume());
+        deleteFile(user.getProfilePicture());
         userRepository.delete(user);
     }
 
+    private void deleteFile(String pathStr) {
+        if (pathStr != null && !pathStr.isEmpty()) {
+            try {
+                Files.deleteIfExists(Path.of(pathStr));
+            } catch (IOException e) {
+                log.warn("Could not delete file: {}", pathStr, e);
+            }
+        }
+    }
 
+    private User getUserOrThrow(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+    }
+
+    private void updateUserRelations(User user, UserDTO dto) {
+        if (dto.getRoleNames() != null) {
+            user.setRoles(dto.getRoleNames().stream()
+                    .map(r -> roleRepository.findByName(r)
+                            .orElseThrow(() -> new RuntimeException("Role not found: " + r)))
+                    .collect(Collectors.toSet()));
+        }
+
+        if (dto.getSkillNames() != null) {
+            user.setSkills(dto.getSkillNames().stream()
+                    .map(s -> skillRepository.findByName(s)
+                            .orElseThrow(() -> new RuntimeException("Skill not found: " + s)))
+                    .collect(Collectors.toSet()));
+        }
+    }
+
+    private UserDTO convertToDTO(User user) {
+        return UserDTO.builder()
+                .userId(user.getUserId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .experience(user.getExperience())
+                .profilePicture(user.getProfilePicture())
+                .resume(user.getResume())
+                .roleNames(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+                .skillNames(user.getSkills().stream().map(Skill::getName).collect(Collectors.toSet()))
+                .build();
+    }
 }
