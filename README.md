@@ -1,83 +1,160 @@
-📌 Job Portal Backend (Spring Boot)
+# 📌 JobPortal – Spring Boot Backend (Dockerized + Production Ready)
 
-A complete Job Portal Backend built using Java, Spring Boot, Spring Security, JWT, and MySQL.
-This project provides all core functionalities required for a job portal, such as:
+This is the backend of **JobPortal**, a production-ready job search platform built using **Spring Boot**, **MySQL**, **Docker**, and **JWT Authentication**. It provides APIs for users, companies, job postings, interviews, applications, and more.
 
-User & Company authentication
+---
 
-Role-based authorization
+## 🚀 Features
 
-Job posting by companies
+### 🧑‍💼 User Module
 
-Job search
+* User registration & login (JWT)
+* Explore & apply to jobs
+* Save jobs
+* Receive email notifications
+* Weekly recommended jobs
 
-Job application handling
+### 🏢 Company Module
 
-Resume upload & download
+* Company login & registration
+* Create & manage job posts
+* View applicants
+* Schedule interviews
+* Announcements & alerts
 
-JWT-based secure API access
+### 🔐 Security
 
-This repository currently contains only the backend.
-👉 The frontend (React) will be added later.
+* JWT Authentication (User + Company roles)
+* Password hashing
+* Role-based access
 
-🚀 Features
-👤 User Features
+### 🛠 Tech Stack
 
-Register & Login using JWT
+* Java 17
+* Spring Boot
+* MySQL 8
+* Spring Security
+* Spring Data JPA
+* Docker + Docker Compose
+* Hibernate
+* JWT
+* Maven
 
-Search jobs by skills, title, location, etc.
+---
 
-Apply for jobs
+## 🐳 Docker Setup
 
-View applied jobs
+This backend runs with **two containers**:
 
-Download job description (if provided by company)
+1. Spring Boot API
+2. MySQL 8 Database
 
-🏢 Company Features
+### ▶️ Start Backend
 
-Register & Login using JWT
+```
+docker-compose up --build
+```
 
-Post new jobs
+### 🛑 Stop Containers
 
-Update or delete posted jobs
+```
+docker-compose down
+```
 
-View all applicants
+---
 
-Shortlist / Reject candidates
+## 📁 Project Structure
 
-Download resumes
+```
+JobPortal/
+│── src/
+│── uploads/                # File uploads (ignored)
+│── mysql_data/             # MySQL volume data (ignored)
+│── docker-compose.yml
+│── Dockerfile
+│── .gitignore
+│── .env                    # Secrets (ignored)
+│── pom.xml
+│── README.md
+```
 
-Manage company profile
+---
 
-🔐 Authentication
+## 🔧 Environment Variables (`.env`)
 
-JWT-based authentication
+Create a `.env` file (DO NOT upload to GitHub):
 
-Role-based access (USER, COMPANY)
+```
+SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/jobportal?allowPublicKeyRetrieval=true&useSSL=false
+SPRING_DATASOURCE_USERNAME=root
+SPRING_DATASOURCE_PASSWORD=tiger
 
-Secure Login APIs
+SPRING_MAIL_USERNAME=your-email@gmail.com
+SPRING_MAIL_PASSWORD=your-app-password
 
-Separate login endpoints for user and company
+SECRET_KEY=your-jwt-secret-key
+```
 
-🛠 Tech Stack
-Backend
+---
 
-Java 17+
+## 📬 API Highlights
 
-Spring Boot 3.x
+### 🔑 Authentication
 
-Spring Security & JWT
+* POST `/public/userLogin`
+* POST `/public/companyLogin`
+* POST `/public/userSignup`
+* POST `/public/companySignup`
 
-Hibernate / JPA
+### 🧑‍💼 Jobs
 
-MySQL
+* GET `/public/getJobs`
+* POST `/company/createJob`
+* DELETE `/company/deleteJob/{id}`
 
-Lombok
+### 📝 Applications
 
-Maven
+* POST `/user/applyJob`
+* GET `/user/getApplications`
+* GET `/company/getApplicants/{jobId}`
 
-Other Tools
+### 📅 Interviews
 
-Postman (API testing)
+* POST `/company/scheduleInterview`
+* GET `/user/interviewDetails`
 
-Git & GitHub
+---
+
+## 📦 Dockerfile Used
+
+```dockerfile
+FROM eclipse-temurin:17-jdk
+WORKDIR /app
+COPY target/*.jar app.jar
+EXPOSE 8085
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
+
+---
+
+## ☁️ Cloud Deployment
+
+This backend works perfectly on:
+
+* AWS EC2
+* Render
+* Railway
+* DigitalOcean
+* Docker Hub + ECS
+* Kubernetes
+
+---
+
+## 👨‍💻 Author
+
+**Darshan S V**
+Backend Developer – Java | Spring Boot | MySQL | Docker
+
+---
+
+If you want more sections like **API documentation, screenshots, UML/ER diagrams, or CI/CD setup**, I can add them!
