@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/db_name
-    username: your db username
-    password: your db password
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -16,8 +16,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: your email
-    password: password
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
@@ -26,7 +26,8 @@ server:
   port: 8085
 
 uploads:
-  dir: uploads/
+
+  dir: /uploads/
 
 thymeleaf:
   prefix: classpath:/templates/
@@ -35,4 +36,4 @@ thymeleaf:
   cache: false
 
 secret:
-  key: S9eJvVhVZ4oKQ1zq7xgH1L2mA5tR8yN3bU6cP4dE0jW9fS3rG7kM2nT8vX5qY1oC
+  key: ${SECRET_KEY}
