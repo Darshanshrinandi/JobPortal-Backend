@@ -16,8 +16,12 @@ import java.util.stream.Collectors;
 public class JobCategoryService {
 
 
-    @Autowired
-    private JobCategoryRepository jobCategoryRepository;
+
+    private final JobCategoryRepository jobCategoryRepository;
+
+    public JobCategoryService(JobCategoryRepository jobCategoryRepository) {
+        this.jobCategoryRepository = jobCategoryRepository;
+    }
 
     public JobCategoryDTO createJobCategory(JobCategoryDTO jobCategoryDTO) {
         if (jobCategoryRepository.existsByNameIgnoreCase(jobCategoryDTO.getName())) {

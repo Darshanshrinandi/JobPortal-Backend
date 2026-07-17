@@ -36,26 +36,35 @@ import java.util.stream.Collectors;
 @Transactional
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
 
-    @Autowired
-    private RoleRepository roleRepository;
+    private final  UserRepository userRepository;
 
-    @Autowired
-    private SkillRepository skillRepository;
 
-    @Autowired
-    private EmailService emailService;
+    private final  RoleRepository roleRepository;
 
-    @Autowired
-    private JwtService jwtService;
+
+    private final SkillRepository skillRepository;
+
+
+    private final EmailService emailService;
+
+
+    private final  JwtService jwtService;
+
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${uploads.dir}")
     private String UPLOAD_DIR;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+
+    public UserService(UserRepository userRepository, RoleRepository roleRepository, SkillRepository skillRepository, EmailService emailService, JwtService jwtService, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.skillRepository = skillRepository;
+        this.emailService = emailService;
+        this.jwtService = jwtService;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @PostConstruct
     public void init() {

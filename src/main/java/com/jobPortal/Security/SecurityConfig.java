@@ -28,11 +28,16 @@ import java.util.List;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    @Autowired
-    private UserDetailsService userDetails;
 
-    @Autowired
-    private JwtAuthenticationFilter jwtFilter;
+    private final UserDetailsService userDetails;
+
+
+    private final JwtAuthenticationFilter jwtFilter;
+
+    public SecurityConfig(UserDetailsService userDetails, JwtAuthenticationFilter jwtFilter) {
+        this.userDetails = userDetails;
+        this.jwtFilter = jwtFilter;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

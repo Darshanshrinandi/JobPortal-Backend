@@ -29,20 +29,32 @@ import java.util.stream.Collectors;
 @Transactional
 public class ApplicationService {
 
-    @Autowired
-    private ApplicationRepository applicationRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final ApplicationRepository applicationRepository;
 
-    @Autowired
-    private JobRepository jobRepository;
+
+    private final UserRepository userRepository;
+
+
+    private final JobRepository jobRepository;
 
     @Value("${uploads.dir}")
-    private String uploadDir;
+    private  String uploadDir;
 
-    @Autowired
-    private EmailService emailService;
+
+    private final EmailService emailService;
+
+    public ApplicationService(ApplicationRepository applicationRepository,
+                              UserRepository userRepository,
+                              JobRepository jobRepository,
+
+                              EmailService emailService) {
+        this.applicationRepository = applicationRepository;
+        this.userRepository = userRepository;
+        this.jobRepository = jobRepository;
+
+        this.emailService = emailService;
+    }
 
     private final long MAX_FILE_SIZE = 5 * 1024 * 1024;
 

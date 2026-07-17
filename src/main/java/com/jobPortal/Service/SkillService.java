@@ -14,8 +14,12 @@ import java.util.Optional;
 @Service
 public class SkillService {
 
-    @Autowired
-    private SkillRepository skillRepository;
+
+    private final SkillRepository skillRepository;
+
+    SkillService(SkillRepository skillRepository) {
+        this.skillRepository = skillRepository;
+    }
 
     public Skill findSkillById(Long id) {
         return skillRepository.findById(id)

@@ -16,14 +16,20 @@ import java.util.stream.Collectors;
 @Transactional
 public class InterviewService {
 
-    @Autowired
-    private InterviewRepository interviewRepository;
 
-    @Autowired
-    private ApplicationRepository applicationRepository;
+    private final InterviewRepository interviewRepository;
 
-    @Autowired
-    private EmailService emailService;
+
+    private final ApplicationRepository applicationRepository;
+
+
+    private final EmailService emailService;
+
+    public InterviewService(InterviewRepository interviewRepository, ApplicationRepository applicationRepository, EmailService emailService) {
+        this.interviewRepository = interviewRepository;
+        this.applicationRepository = applicationRepository;
+        this.emailService = emailService;
+    }
 
     public InterviewDTO scheduleInterview(InterviewDTO interviewDTO) throws MessagingException {
 

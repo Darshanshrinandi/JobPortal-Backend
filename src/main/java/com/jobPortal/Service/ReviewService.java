@@ -19,14 +19,20 @@ import java.util.stream.Collectors;
 @Transactional
 public class ReviewService {
 
-    @Autowired
-    private ReviewRepository reviewRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private  final ReviewRepository reviewRepository;
 
-    @Autowired
-    private CompanyRepository companyRepository;
+
+    private final  UserRepository userRepository;
+
+
+    private final CompanyRepository companyRepository;
+
+    public ReviewService(ReviewRepository reviewRepository, UserRepository userRepository, CompanyRepository companyRepository) {
+        this.reviewRepository = reviewRepository;
+        this.userRepository = userRepository;
+        this.companyRepository = companyRepository;
+    }
 
     public ReviewDTO addReview(ReviewDTO reviewDTO) {
         User user = userRepository.findById(reviewDTO.getUserId())

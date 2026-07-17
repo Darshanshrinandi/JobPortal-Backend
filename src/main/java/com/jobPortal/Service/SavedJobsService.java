@@ -18,15 +18,20 @@ import java.util.stream.Collectors;
 @Transactional
 public class SavedJobsService {
 
-    @Autowired
-    private SavedJobRepository savedJobRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final  SavedJobRepository savedJobRepository;
 
-    @Autowired
-    private JobRepository jobRepository;
 
+    private final UserRepository userRepository;
+
+
+    private final JobRepository jobRepository;
+
+    public SavedJobsService(SavedJobRepository savedJobRepository, UserRepository userRepository, JobRepository jobRepository) {
+        this.savedJobRepository = savedJobRepository;
+        this.userRepository = userRepository;
+        this.jobRepository = jobRepository;
+    }
 
     public SavedJobsDTO saveJob(SavedJobsDTO savedJobsDTO) {
         User user = userRepository.findById(savedJobsDTO.getUserId())

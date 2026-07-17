@@ -37,30 +37,39 @@ import java.util.List;
 @Transactional
 public class CompanyService {
 
-    @Autowired
-    private CompanyRepository companyRepository;
 
-    @Autowired
-    private EmailService emailService;
-
-    @Autowired
-    private JobRepository jobRepository;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private ApplicationRepository applicationRepository;
+    private final CompanyRepository companyRepository;
 
 
-    @Autowired
-    private JwtService jwtService;
+    private final EmailService emailService;
+
+
+    private final JobRepository jobRepository;
+
+   @Autowired
+    private  AuthenticationManager authenticationManager;
+
+
+    private final PasswordEncoder passwordEncoder;
+
+
+    private final ApplicationRepository applicationRepository;
+
+
+
+    private final JwtService jwtService;
 
     @Value("${uploads.dir}")
     private String UPLOAD_DIR;
+
+    public CompanyService(CompanyRepository companyRepository, EmailService emailService, JobRepository jobRepository, PasswordEncoder passwordEncoder, ApplicationRepository applicationRepository, JwtService jwtService) {
+        this.companyRepository = companyRepository;
+        this.emailService = emailService;
+        this.jobRepository = jobRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.applicationRepository = applicationRepository;
+        this.jwtService = jwtService;
+    }
 
     public String verifyCompany(String email, String password) {
         Company company = companyRepository.findByEmail(email)

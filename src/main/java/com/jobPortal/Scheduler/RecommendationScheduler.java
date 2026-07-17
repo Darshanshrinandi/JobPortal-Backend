@@ -19,17 +19,20 @@ import java.util.stream.Collectors;
 @Service
 public class RecommendationScheduler {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final JobRepository jobRepository;
+    private final EmailService emailService;
 
     @Autowired
-    private JobRepository jobRepository;
+    private  CompanyRepository companyRepository;
 
-    @Autowired
-    private EmailService emailService;
 
-    @Autowired
-    private CompanyRepository companyRepository;
+    RecommendationScheduler(UserRepository userRepository, JobRepository jobRepository, EmailService emailService) {
+        this.userRepository = userRepository;
+        this.jobRepository = jobRepository;
+        this.emailService = emailService;
+
+    }
 
     // Scheduled every Monday at 9 AM
     @Async

@@ -16,23 +16,32 @@ import java.util.stream.Collectors;
 @Transactional
 public class JobService {
 
-    @Autowired
-    private JobRepository jobRepository;
 
-    @Autowired
-    private CompanyRepository companyRepository;
+    private final JobRepository jobRepository;
 
-    @Autowired
-    private JobCategoryRepository jobCategoryRepository;
 
-    @Autowired
-    private SkillRepository skillRepository;
+    private final CompanyRepository companyRepository;
 
-    @Autowired
-    private EmailService emailService;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final JobCategoryRepository jobCategoryRepository;
+
+
+    private final SkillRepository skillRepository;
+
+
+    private final  EmailService emailService;
+
+
+    private final  UserRepository userRepository;
+
+    public JobService(JobRepository jobRepository, CompanyRepository companyRepository, JobCategoryRepository jobCategoryRepository, SkillRepository skillRepository, EmailService emailService, UserRepository userRepository) {
+        this.jobRepository = jobRepository;
+        this.companyRepository = companyRepository;
+        this.jobCategoryRepository = jobCategoryRepository;
+        this.skillRepository = skillRepository;
+        this.emailService = emailService;
+        this.userRepository = userRepository;
+    }
 
     public JobDTO createJob(JobDTO jobDTO, Long companyId) {
         Company company = companyRepository.findById(companyId)

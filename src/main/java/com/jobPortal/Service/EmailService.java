@@ -30,22 +30,31 @@ import java.util.stream.Collectors;
 @Slf4j
 public class EmailService {
 
-    @Autowired
-    private JavaMailSender jobPortalMailSender;
+
+    private final JavaMailSender jobPortalMailSender;
 
 
-    @Autowired
-    private TemplateEngine templateEngine;
+
+    private final TemplateEngine templateEngine;
+
+
 
     @Value("${spring.mail.username}")
     private String jobPortalMail;
 
 
-    @Autowired
-    private UserRepository userRepository;
 
-    @Autowired
-    private JobRepository jobRepository;
+    private final UserRepository userRepository;
+
+
+    private final JobRepository jobRepository;
+
+    public EmailService(JavaMailSender jobPortalMailSender, TemplateEngine templateEngine, UserRepository userRepository, JobRepository jobRepository) {
+        this.jobPortalMailSender = jobPortalMailSender;
+        this.templateEngine = templateEngine;
+        this.userRepository = userRepository;
+        this.jobRepository = jobRepository;
+    }
 
 
     @Async
