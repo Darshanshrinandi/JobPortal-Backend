@@ -6,9 +6,10 @@ import com.jobPortal.Repository.ApplicationRepository;
 import com.jobPortal.Repository.InterviewRepository;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,16 +26,26 @@ public class InterviewService {
 
     private final EmailService emailService;
 
-    public InterviewService(InterviewRepository interviewRepository, ApplicationRepository applicationRepository, EmailService emailService) {
+    private final NotificationService notificationService;
+
+    public InterviewService(InterviewRepository interviewRepository, ApplicationRepository applicationRepository, EmailService emailService, NotificationService notificationService) {
         this.interviewRepository = interviewRepository;
         this.applicationRepository = applicationRepository;
         this.emailService = emailService;
+        this.notificationService = notificationService;
     }
 
-    public InterviewDTO scheduleInterview(InterviewDTO interviewDTO) throws MessagingException {
+    @Transactional
+    public InterviewDTO scheduleInterview(
+            InterviewDTO interviewDTO
+    ) throws MessagingException {
 
-        Application application = applicationRepository.findById(interviewDTO.getApplicationId())
-                .orElseThrow(() -> new IllegalArgumentException("Application Not Found"));
+        Application application = applicationRepository
+                .findById(interviewDTO.getApplicationId())
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Application Not Found"
+                        ));
 
         Interview interview = Interview.builder()
                 .application(application)
@@ -42,7 +53,15 @@ public class InterviewService {
                 .mode(interviewDTO.getMode())
                 .status(interviewDTO.getStatus())
                 .feedback(interviewDTO.getFeedback())
+                .createdAt(new Date())
                 .build();
+
+
+        System.out.println("========== INTERVIEW DEBUG ==========");
+        System.out.println("createdAt: " + interview.getCreatedAt());
+        System.out.println("scheduledDate: " + interview.getScheduledDate());
+        System.out.println("applicationId: " + interview.getApplication().getApplicationId());
+        System.out.println("====================================");
 
         interview = interviewRepository.save(interview);
 
@@ -50,61 +69,33 @@ public class InterviewService {
         Job job = application.getJob();
         Company company = job.getCompany();
 
+
         emailService.sendInterviewScheduleEmail(
                 user.getEmail(),
                 user.getName(),
                 job.getTitle(),
                 interview.getScheduledDate().toString(),
                 interview.getMode(),
-                job.getCompany().getName(),
+                company.getName(),
                 job.getLocation(),
                 company
-
         );
 
+        // New in-app notification
+        notificationService.createNotification(
+                user,
+                application,
+                "INTERVIEW_SCHEDULED",
+                "Interview Scheduled",
+                company.getName()
+                        + " has scheduled an interview for "
+                        + job.getTitle()
+                        + " on "
+                        + interview.getScheduledDate()
+                        + "."
+        );
 
         return mapToDTO(interview);
-
-    }
-
-    public InterviewDTO updateInterview(Long id, InterviewDTO interviewDTO) {
-
-        Interview interview = interviewRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Interview Not Found"));
-
-        if (interviewDTO.getScheduledDate() != null) {
-            interview.setScheduledDate(interviewDTO.getScheduledDate());
-        }
-
-        if (interviewDTO.getMode() != null) {
-            interview.setMode(interviewDTO.getMode());
-        }
-        if (interviewDTO.getStatus() != null) {
-            interview.setStatus(interviewDTO.getStatus());
-        }
-        if (interviewDTO.getFeedback() != null) {
-            interview.setFeedback(interviewDTO.getFeedback());
-        }
-        interview = interviewRepository.save(interview);
-        return mapToDTO(interview);
-    }
-
-    public void deleteInterview(Long id) {
-        Interview interview = interviewRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Interview Not Found"));
-        interviewRepository.deleteById(id);
-    }
-
-    public InterviewDTO getInterviewById(Long id) {
-        Interview interview = interviewRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Interview Not Found"));
-        return mapToDTO(interview);
-    }
-
-    public List<InterviewDTO> getAllInterviews() {
-        return interviewRepository.findAll().stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
     }
 
     public List<InterviewDTO> getInterviewsByApplication(Long id) {
@@ -125,9 +116,30 @@ public class InterviewService {
 
     public InterviewDTO mapToDTO(Interview interview) {
 
+        Application application = interview.getApplication();
+
+        User user = application.getUser();
+
+        Job job = application.getJob();
+
         return InterviewDTO.builder()
-                .applicationId(interview.getApplication().getApplicationId())
+                .interviewId(interview.getInterviewId())
+                .applicationId(application.getApplicationId())
+
+                .candidateName(
+                        user != null ? user.getName() : "N/A"
+                )
+
+                .candidateEmail(
+                        user != null ? user.getEmail() : "N/A"
+                )
+
+                .jobTitle(
+                        job != null ? job.getTitle() : "N/A"
+                )
+
                 .scheduledDate(interview.getScheduledDate())
+                .createdAt(interview.getCreatedAt())
                 .mode(interview.getMode())
                 .status(interview.getStatus())
                 .feedback(interview.getFeedback())
@@ -150,5 +162,133 @@ public class InterviewService {
         interview.setFeedback(feedback);
         interviewRepository.save(interview);
     }
+
+    public InterviewDTO updateInterview(
+            Long id,
+            InterviewDTO interviewDTO
+    ) {
+
+        Interview interview = interviewRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Interview Not Found"));
+
+        Application application = interview.getApplication();
+
+        boolean dateChanged =
+                interviewDTO.getScheduledDate() != null &&
+                        !interviewDTO.getScheduledDate()
+                                .equals(interview.getScheduledDate());
+
+        boolean modeChanged =
+                interviewDTO.getMode() != null &&
+                        !interviewDTO.getMode()
+                                .equalsIgnoreCase(interview.getMode());
+
+        boolean statusChanged =
+                interviewDTO.getStatus() != null &&
+                        !interviewDTO.getStatus()
+                                .equalsIgnoreCase(interview.getStatus());
+
+        if (interviewDTO.getScheduledDate() != null) {
+            interview.setScheduledDate(
+                    interviewDTO.getScheduledDate()
+            );
+        }
+
+        if (interviewDTO.getMode() != null) {
+            interview.setMode(
+                    interviewDTO.getMode()
+            );
+        }
+
+        if (interviewDTO.getStatus() != null) {
+            interview.setStatus(
+                    interviewDTO.getStatus()
+            );
+        }
+
+        if (interviewDTO.getFeedback() != null) {
+            interview.setFeedback(
+                    interviewDTO.getFeedback()
+            );
+        }
+
+        interview = interviewRepository.save(interview);
+
+        User user = application.getUser();
+        Job job = application.getJob();
+        Company company = job.getCompany();
+
+        if (dateChanged || modeChanged) {
+
+            notificationService.createNotification(
+                    user,
+                    application,
+                    "INTERVIEW_RESCHEDULED",
+                    "Interview Updated",
+                    company.getName()
+                            + " updated your interview for "
+                            + job.getTitle()
+                            + ". New date: "
+                            + interview.getScheduledDate()
+                            + ", Mode: "
+                            + interview.getMode()
+                            + "."
+            );
+        }
+
+        if (statusChanged &&
+                "CANCELLED".equalsIgnoreCase(
+                        interview.getStatus()
+                )) {
+
+            notificationService.createNotification(
+                    user,
+                    application,
+                    "INTERVIEW_CANCELLED",
+                    "Interview Cancelled",
+                    company.getName()
+                            + " cancelled your interview for "
+                            + job.getTitle()
+                            + "."
+            );
+        }
+
+        return mapToDTO(interview);
+    }
+
+    public InterviewDTO getInterviewById(Long id) {
+        return interviewRepository.findById(id)
+                .map(this::mapToDTO)
+                .orElseThrow(() ->
+                        new RuntimeException("Interview not found with id: " + id)
+                );
+    }
+
+    public List<InterviewDTO> getAllInterviews() {
+        return interviewRepository.findAll()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+
+    public void deleteInterview(Long id) {
+        if (!interviewRepository.existsById(id)) {
+            throw new RuntimeException("Interview not found with id: " + id);
+        }
+
+        interviewRepository.deleteById(id);
+    }
+
+    public List<InterviewDTO> getInterviewsByCompany(Long companyId) {
+
+        return interviewRepository
+                .findByApplicationJobCompanyCompanyId(companyId)
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+
+
 
 }

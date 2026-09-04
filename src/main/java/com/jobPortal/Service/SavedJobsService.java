@@ -33,6 +33,7 @@ public class SavedJobsService {
         this.jobRepository = jobRepository;
     }
 
+   @Transactional
     public SavedJobsDTO saveJob(SavedJobsDTO savedJobsDTO) {
         User user = userRepository.findById(savedJobsDTO.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));

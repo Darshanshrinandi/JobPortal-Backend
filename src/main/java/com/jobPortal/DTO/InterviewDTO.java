@@ -16,8 +16,16 @@ import java.util.Date;
 @Builder
 public class InterviewDTO {
 
+    private Long interviewId;
+
     @NotNull(message = "Application ID is required")
     private Long applicationId;
+
+    private String candidateName;
+
+    private String candidateEmail;
+
+    private String jobTitle;
 
     @NotNull(message = "Scheduled date is required")
     private Date scheduledDate;
@@ -30,4 +38,6 @@ public class InterviewDTO {
 
     @Size(max = 2000, message = "Feedback can contain at most 2000 characters")
     private String feedback;
+
+    private Date createdAt;
 }

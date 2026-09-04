@@ -38,6 +38,8 @@ public class ApplicationService {
 
     private final JobRepository jobRepository;
 
+    private final NotificationService notificationService;
+
     @Value("${uploads.dir}")
     private  String uploadDir;
 
@@ -46,12 +48,13 @@ public class ApplicationService {
 
     public ApplicationService(ApplicationRepository applicationRepository,
                               UserRepository userRepository,
-                              JobRepository jobRepository,
+                              JobRepository jobRepository, NotificationService notificationService,
 
                               EmailService emailService) {
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
         this.jobRepository = jobRepository;
+        this.notificationService = notificationService;
 
         this.emailService = emailService;
     }
@@ -258,31 +261,92 @@ public class ApplicationService {
         }
     }
 
+    public ApplicationDTO updateApplicationStatus(Long id, String status)
+            throws MessagingException {
 
-    public ApplicationDTO updateApplicationStatus(Long id, String status) {
         Application application = applicationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Application not found by id: " + id));
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Application not found by id: " + id
+                        ));
+
+        String oldStatus = application.getStatus();
+
         application.setStatus(status);
+
         Application saved = applicationRepository.save(application);
+
+        User user = saved.getUser();
+        Job job = saved.getJob();
+        Company company = job.getCompany();
+
+        if (oldStatus == null || !status.equalsIgnoreCase(oldStatus)) {
+
+            String title;
+            String message;
+
+            switch (status.toUpperCase()) {
+
+                case "SHORTLISTED" -> {
+                    title = "Application Shortlisted";
+                    message =
+                            company.getName()
+                                    + " has shortlisted your application for "
+                                    + job.getTitle()
+                                    + ".";
+                }
+
+                case "REJECTED" -> {
+                    title = "Application Update";
+                    message =
+                            company.getName()
+                                    + " has rejected your application for "
+                                    + job.getTitle()
+                                    + ".";
+                }
+
+                case "SELECTED" -> {
+                    title = "Congratulations!";
+                    message =
+                            company.getName()
+                                    + " has selected you for "
+                                    + job.getTitle()
+                                    + ".";
+                }
+
+                case "SUBMITTED" -> {
+                    title = "Application Submitted";
+                    message =
+                            "Your application for "
+                                    + job.getTitle()
+                                    + " at "
+                                    + company.getName()
+                                    + " has been submitted successfully.";
+                }
+
+                default -> {
+                    title = "Application Status Updated";
+                    message =
+                            company.getName()
+                                    + " updated your application status for "
+                                    + job.getTitle()
+                                    + " to "
+                                    + status
+                                    + ".";
+                }
+            }
+
+            notificationService.createNotification(
+                    user,
+                    saved,
+                    "APPLICATION_STATUS",
+                    title,
+                    message
+            );
+        }
+
         return mapToDTO(saved);
     }
-
-    public List<ApplicationDTO> searchApplications(String skill, String status) {
-        List<Application> applications = applicationRepository.findAll();
-
-        return applications.stream()
-                .filter(app ->
-                        (skill == null ||
-                                (app.getJob() != null &&
-                                        app.getJob().getSkills() != null &&
-                                        app.getJob().getSkills().stream()
-                                                .anyMatch(s -> s.getName().equalsIgnoreCase(skill)))) &&
-                                (status == null ||
-                                        (app.getStatus() != null && app.getStatus().equalsIgnoreCase(status))))
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
-    }
-
 
 
     private ApplicationDTO mapToDTO(Application application) {
@@ -305,5 +369,16 @@ public class ApplicationService {
         return applicationRepository.findById(applicationId)
                 .map(application -> application.getUser().getUserId().equals(userId))
                 .orElse(false);
+    }
+
+    public List<ApplicationDTO> searchApplications(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+
+        return applicationRepository.searchApplications(keyword.trim())
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 }

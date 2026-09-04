@@ -88,6 +88,7 @@ public class CompanyService {
     }
 
 
+    @Transactional
     public Company createCompany(CompanyDTO companyDTO) throws IOException, MessagingException {
         if (companyRepository.existsByEmail(companyDTO.getEmail())) {
             throw new RuntimeException("Email already exists");

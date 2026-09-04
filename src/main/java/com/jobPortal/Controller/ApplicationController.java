@@ -150,8 +150,8 @@ public class ApplicationController {
     @PutMapping("/updateStatus/{id}")
     public ResponseEntity<ApiResponse<ApplicationDTO>> updateApplicationStatus(
             @PathVariable Long id,
-            @RequestParam Long jobId,       // ✅ include this!
-            @RequestParam String status) {
+            @RequestParam Long jobId,
+            @RequestParam String status) throws MessagingException {
 
         ApplicationDTO updated = applicationService.updateApplicationStatus(id, status);
 
@@ -207,7 +207,7 @@ public class ApplicationController {
             @RequestParam(required = false) String skill,
             @RequestParam(required = false) String status) {
 
-        List<ApplicationDTO> result = applicationService.searchApplications(skill, status);
+        List<ApplicationDTO> result = applicationService.searchApplications(skill);
         ApiResponse<List<ApplicationDTO>> response = new ApiResponse<>(
                 HttpStatus.OK.value(), "Applications filtered successfully", result);
         return ResponseEntity.ok(response);

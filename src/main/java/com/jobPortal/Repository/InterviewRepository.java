@@ -17,4 +17,6 @@ public interface InterviewRepository extends JpaRepository<Interview,Long> {
 
     List<Interview> findByStatusIgnoreCase(String status);
 
+    List<Interview> findByApplicationJobCompanyCompanyId(Long companyId);
+
 }

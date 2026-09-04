@@ -12,8 +12,13 @@ import java.util.Map;
 @RequestMapping("/jobPortal")
 public class AuthController {
 
-    @Autowired
-    private JwtService jwtService;
+
+    private final JwtService jwtService;
+
+    public AuthController(JwtService jwtService) {
+        this.jwtService = jwtService;
+    }
+
 
     @PostMapping("/refreshToken")
     public ResponseEntity<?> refreshToken(HttpServletRequest request) {

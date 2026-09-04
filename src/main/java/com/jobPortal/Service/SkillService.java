@@ -26,9 +26,12 @@ public class SkillService {
                 .orElseThrow(() -> new RuntimeException("Skill not found with id: " + id));
     }
 
+
     @Transactional
     public List<Skill> getAllSkills() {
-        return skillRepository.findAll();
+        List<Skill> skills= skillRepository.findAll();
+        System.out.println(">>> Skill count from JPA: " + skills.size());
+        return skills;
     }
 
     @Transactional

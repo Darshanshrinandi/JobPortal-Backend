@@ -66,14 +66,6 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @PostConstruct
-    public void init() {
-        File uploadDir = new File(UPLOAD_DIR);
-        if (!uploadDir.exists()) {
-            uploadDir.mkdirs();
-        }
-    }
-
     @EntityGraph(attributePaths = {"roles", "skills"})
     public UserDTO findUserById(Long id) {
         User user = userRepository.findById(id)
@@ -98,6 +90,7 @@ public class UserService {
         return users.map(this::convertToDTO);
     }
 
+    @Transactional
     public User createUser(UserDTO dto, MultipartFile resumeFile, MultipartFile profileImage)
             throws IOException, MessagingException {
 
@@ -211,6 +204,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     public User updateUser(Long userId, UserDTO userDTO, MultipartFile resumeFile, MultipartFile profileImage)
             throws IOException {
 

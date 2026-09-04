@@ -229,6 +229,7 @@ public class JobService {
 
         return JobDTO.builder()
                 .companyId(job.getCompany().getCompanyId())
+                .companyName(job.getCompany().getName())
                 .categoryId(job.getCategory().getCategoryId())
                 .jobId(job.getJobId())
                 .title(job.getTitle())

@@ -25,7 +25,7 @@ public class Company {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long companyId;
 
-
+@Column(unique = true,nullable = false)
     private String name;
 
 
@@ -34,6 +34,7 @@ public class Company {
     private String email;
 
 
+    @Column(unique = true, nullable = false)
     private String password;
 
 

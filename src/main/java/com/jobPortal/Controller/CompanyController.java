@@ -40,14 +40,26 @@ public class CompanyController {
 
     @PreAuthorize("hasAnyRole('USER','ADMIN') or @companyService.isCompanyOwner(#id, authentication)")
     @GetMapping("/findCompany/{id}")
-    public ResponseEntity<ApiResponse<Company>> getCompany(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CompanyDTO>> getCompany(@PathVariable Long id) {
+
         Company company = companyService.getCompanyById(id);
 
-        ApiResponse<Company> response = new ApiResponse<>(
+        CompanyDTO companyDTO = new CompanyDTO();
+
+        companyDTO.setCompanyId(company.getCompanyId());
+        companyDTO.setName(company.getName());
+        companyDTO.setEmail(company.getEmail());
+        companyDTO.setDescription(company.getDescription());
+        companyDTO.setWebSite(company.getWebSite());
+        companyDTO.setLocation(company.getLocation());
+        companyDTO.setStatus(company.getStatus());
+
+        ApiResponse<CompanyDTO> response = new ApiResponse<>(
                 HttpStatus.OK.value(),
                 "Fetched Successfully",
-                company
+                companyDTO
         );
+
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

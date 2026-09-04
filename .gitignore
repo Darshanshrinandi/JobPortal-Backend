@@ -35,3 +35,5 @@ uploads/
 
 .env
 
+src/main/resources/application.yml
+

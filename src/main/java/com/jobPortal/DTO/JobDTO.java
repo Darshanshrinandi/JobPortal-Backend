@@ -22,6 +22,7 @@ public class JobDTO {
 
     private Long jobId;
 
+    private String companyName;
 
     private Long companyId;
 
